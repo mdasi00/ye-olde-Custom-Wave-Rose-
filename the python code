@@ -1,0 +1,88 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from windrose import WindroseAxes
+import matplotlib.cm as cm
+from matplotlib.patches import Rectangle
+from matplotlib import patheffects, ticker
+
+# Set the default font family to Times New Roman
+mpl.rcParams['font.family'] = 'Times New Roman'
+
+# Load data
+data = pd.read_csv('newWindData.csv')
+data['Dpdeg'] = data['Dpdeg'].replace('--', np.nan).astype(float)
+data['Hsigm'] = data['Hsigm'].replace('--', np.nan).astype(float)
+
+# Create wave height (ws) and direction (wd) variables
+ws = data['Dpdeg'].values
+wd = data['Hsigm'].values
+
+# Create the windrose axes
+ax = WindroseAxes.from_ax()
+
+# Custom labels for the bins
+custom_labels = ['<1', '>1', '>2', '>3', '>4']
+
+# Create the windrose plot with custom settings
+ax.bar(ws, wd, bins=np.arange(0, 5, 1), cmap=cm.Greens, edgecolor='black', linewidth=1, normed=True)
+
+# Define the formatter function (percent label)
+def percentage(x, pos):
+    return '{:.0f}%'.format(x * 1)
+
+# Apply the formatter function to both x and y axes and adjust font size
+ax.yaxis.set_major_formatter(ticker.FuncFormatter(percentage))
+ax.yaxis.set_tick_params(labelsize=24)
+ax.xaxis.set_major_formatter(ticker.FuncFormatter(percentage))
+ax.xaxis.set_tick_params(labelsize=24)
+
+# Set up the grid lines with custom colors and line widths
+ax.grid(color='k', linewidth=0.3)
+
+# Set the radial grid labels and font size
+theLabels = ['', '', '20%', ' ', '40%', '', '60%']
+ax.set_rgrids(np.arange(0, 70, 10), angle=0, labels=theLabels, fontsize=22)
+ax.set_rlabel_position(180)
+
+# Adjust interior circles
+for line in ax.yaxis.get_gridlines():
+    line.set_linestyle('-.')
+    line.set_color('black')
+
+# Change the spines for cardinal direction lines, grids for the interior circles
+for spine in ax.spines.values():
+    spine.set_visible(True)
+    spine.set_color('black')
+    spine.set_linestyle('-.')
+
+# Set up the x and y axis grid with custom colors and line widths
+ax.xaxis.grid(True, which='both', color='white', linewidth=2)
+ax.yaxis.grid(True, which='both', color='white', linewidth=1)
+
+# Create proxy artists for custom legend
+legend_elements = [Rectangle((0, 0), 1, 1, color=cm.Greens(i/4), label=label, edgecolor='black', linewidth=1) for i, label in enumerate(custom_labels)]
+
+# Remove existing legend
+ax.legend_ = None
+
+# Create the custom legend outside of the windrose plot
+fig = plt.gcf()
+legend = fig.legend(handles=legend_elements, title='Hsig (m)', loc='center left', bbox_to_anchor=(1, 0.5), fontsize='22')
+legend.get_title().set_fontsize(26)
+#Change this color the background of your map with a hex code, or set to white
+legend.get_frame().set_facecolor('#B9D7F1')
+
+# Add halo effect to the legend title and labels
+for label in [legend.get_title()] + legend.get_texts():
+    label.set_path_effects([patheffects.withStroke(linewidth=3, foreground="w")])
+for label in legend.get_lines():
+    label.set_path_effects([patheffects.withStroke(linewidth=3, foreground="w")])
+for label in legend.get_texts():
+    label.set_path_effects([patheffects.withStroke(linewidth=3, foreground="w")])    
+    
+ax.set_xticklabels([ '', '', 'N', '', '', 'SW', '', ''], fontweight='bold', fontsize=30)
+
+#plot and save the figure
+plt.savefig('marcios_cat.png', transparent=True)
+
